@@ -1033,6 +1033,7 @@ function ServicePlanDrawer({ student, onClose }) {
 }
 
 const archiveNotesStorageKey = "studentArchive.notes.v1";
+const archiveCustomFieldsStorageKey = "studentArchive.customFields.v1";
 const editableArchiveFieldKeys = ["riskNotes", "latestFollowUp", "targetSchool", "targetMajor", "courseSelection", "subjectTargetScore", "subjectCurrentStatus"];
 const richArchiveFieldKeys = ["riskNotes", "latestFollowUp"];
 const archiveTextColors = [
@@ -1248,6 +1249,23 @@ function ArchiveColumnFilter({ field, rows, filter, onApply, onClose }) {
 
 function StudentsArchivePage({ go }) {
   const { message } = AntApp.useApp();
+  const [customFields, setCustomFields] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(archiveCustomFieldsStorageKey) || "[]");
+      if (!Array.isArray(saved)) return [];
+      const keys = new Set();
+      const titles = new Set(standardArchiveFields.map((field) => field.title.toLocaleLowerCase()));
+      return saved.filter((field) => {
+        if (!field || typeof field.key !== "string" || !field.key.startsWith("custom_") || typeof field.title !== "string" || !field.title.trim() || keys.has(field.key) || titles.has(field.title.trim().toLocaleLowerCase())) return false;
+        keys.add(field.key); titles.add(field.title.trim().toLocaleLowerCase()); return true;
+      }).slice(0, 5).map((field) => ({ key: field.key, title: field.title.trim(), width: 200, custom: true }));
+    } catch { return []; }
+  });
+  const archiveFields = [...standardArchiveFields, ...customFields];
+  const [draftCustomFields, setDraftCustomFields] = useState(customFields);
+  const draftArchiveFields = [...standardArchiveFields, ...draftCustomFields];
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldError, setNewFieldError] = useState("");
   const [archiveNotes, setArchiveNotes] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(archiveNotesStorageKey) || "{}");
@@ -1258,7 +1276,7 @@ function StudentsArchivePage({ go }) {
   });
   const archiveRows = standardArchiveRows.map((row) => {
     const notes = archiveNotes[row.id];
-    return { ...row, ...Object.fromEntries(richArchiveFieldKeys.map((key) => [`${key}Document`, notes?.[`${key}Document`]])), ...Object.fromEntries(editableArchiveFieldKeys.map((key) => [
+    return { ...row, ...Object.fromEntries(richArchiveFieldKeys.map((key) => [`${key}Document`, notes?.[`${key}Document`]])), ...Object.fromEntries([...editableArchiveFieldKeys, ...customFields.map((field) => field.key)].map((key) => [
       key, typeof notes?.[key] === "string" ? notes[key] : row[key],
     ])) };
   });
@@ -1294,8 +1312,8 @@ function StudentsArchivePage({ go }) {
     if (typeof window === "undefined") return defaultArchiveFieldKeys;
     try {
       const saved = JSON.parse(window.localStorage.getItem(archiveFieldStorageKey) || "[]");
-      const validKeys = saved.filter((key) => standardArchiveFields.some((field) => field.key === key));
-      return validKeys.length ? [...new Set([...requiredArchiveFieldKeys, ...validKeys])] : defaultArchiveFieldKeys;
+      const validKeys = saved.filter((key) => archiveFields.some((field) => field.key === key));
+      return validKeys.length ? [...new Set([...requiredArchiveFieldKeys, ...validKeys])] : [...defaultArchiveFieldKeys, ...customFields.map((field) => field.key)];
     } catch {
       return defaultArchiveFieldKeys;
     }
@@ -1308,8 +1326,8 @@ function StudentsArchivePage({ go }) {
       const parsed = JSON.parse(localStorage.getItem(`${archiveFieldStorageKey}.order`) || "[]");
       if (Array.isArray(parsed)) saved = parsed;
     } catch { /* Fall back to the current displayed order. */ }
-    return [...new Set([...requiredArchiveFieldKeys, ...(saved.length ? saved : visibleFieldKeys), ...standardArchiveFields.map((field) => field.key)])]
-      .filter((key) => standardArchiveFields.some((field) => field.key === key));
+    return [...new Set([...requiredArchiveFieldKeys, ...(saved.length ? saved : visibleFieldKeys), ...archiveFields.map((field) => field.key)])]
+      .filter((key) => archiveFields.some((field) => field.key === key));
   }
   const fieldSortSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
   const sortableFieldKeys = draftFieldOrder.filter((key) => !requiredArchiveFieldKeys.includes(key));
@@ -1317,8 +1335,20 @@ function StudentsArchivePage({ go }) {
     if (from < 0 || to < 0 || from >= sortableFieldKeys.length || to >= sortableFieldKeys.length) return;
     setDraftFieldOrder([...requiredArchiveFieldKeys, ...arrayMove(sortableFieldKeys, from, to)]);
   }
+  function addCustomField() {
+    const title = newFieldName.trim();
+    if (draftCustomFields.length >= 5) return setNewFieldError("最多支持5个自定义字段");
+    if (!title) return setNewFieldError("请输入字段名称");
+    if (title.length > 20) return setNewFieldError("字段名称最多20个字");
+    if (title === "操作" || draftArchiveFields.some((field) => field.title.toLocaleLowerCase() === title.toLocaleLowerCase())) return setNewFieldError("字段名称已存在，请使用其他名称");
+    const field = { key: `custom_${crypto.randomUUID()}`, title, width: 200, custom: true };
+    setDraftCustomFields((current) => [...current, field]);
+    setDraftFieldKeys((current) => [...current, field.key]);
+    setDraftFieldOrder((current) => [...current, field.key]);
+    setNewFieldName(""); setNewFieldError("");
+  }
   const filteredRows = archiveRows.filter((item) => {
-    const searchableFields = standardArchiveFields.map((field) => field.key);
+    const searchableFields = archiveFields.map((field) => field.key);
     const normalizedKeyword = keyword.trim().toLocaleLowerCase();
     const keywordHit = !normalizedKeyword || searchableFields.some((field) => String(item[field] ?? "").toLocaleLowerCase().includes(normalizedKeyword));
     const sourceHit = source === "全部" || item.source === source;
@@ -1351,7 +1381,7 @@ function StudentsArchivePage({ go }) {
   const advisorOptions = getArchiveOptions(standardArchiveRows, "advisor");
   const homeroomOptions = getArchiveOptions(standardArchiveRows, "homeroomTeacher");
   const columns = visibleFieldKeys
-    .map((key) => standardArchiveFields.find((field) => field.key === key))
+    .map((key) => archiveFields.find((field) => field.key === key))
     .filter(Boolean)
     .map((field) => ({
       title: field.title,
@@ -1369,7 +1399,7 @@ function StudentsArchivePage({ go }) {
         if (richArchiveFieldKeys.includes(field.key)) {
           return <ArchiveRichTextCell value={record[field.key]} document={record[`${field.key}Document`]} label={field.title} onSave={(value, document) => saveArchiveNote(record.id, field.key, value, document)} />;
         }
-        if (editableArchiveFieldKeys.includes(field.key)) {
+        if (field.custom || editableArchiveFieldKeys.includes(field.key)) {
           return <ArchiveEditableCell value={record[field.key]} label={field.title} requiresConfirmation={["targetMajor", "courseSelection"].includes(field.key)} onSave={(value) => saveArchiveNote(record.id, field.key, value)} />;
         }
         const remark = archiveNotes[record.id]?.[`${field.key}Remark`];
@@ -1409,6 +1439,8 @@ function StudentsArchivePage({ go }) {
 
   function openFieldDrawer() {
     setDraftFieldKeys(visibleFieldKeys);
+    setDraftCustomFields(customFields);
+    setNewFieldName(""); setNewFieldError("");
     setDraftFieldOrder(getFieldOrder());
     setFieldDrawerOpen(true);
   }
@@ -1416,9 +1448,11 @@ function StudentsArchivePage({ go }) {
   function saveFieldConfig() {
     const nextKeys = [...new Set([...requiredArchiveFieldKeys, ...draftFieldOrder.filter((key) => draftFieldKeys.includes(key))])];
     try {
+      window.localStorage.setItem(archiveCustomFieldsStorageKey, JSON.stringify(draftCustomFields));
       window.localStorage.setItem(`${archiveFieldStorageKey}.order`, JSON.stringify(draftFieldOrder));
       window.localStorage.setItem(archiveFieldStorageKey, JSON.stringify(nextKeys));
       setVisibleFieldKeys(nextKeys);
+      setCustomFields(draftCustomFields);
       setFieldDrawerOpen(false);
       message.success("字段配置已保存");
     } catch {
@@ -1474,7 +1508,7 @@ function StudentsArchivePage({ go }) {
               {keyword.trim() && <Tag closable onClose={() => setKeyword("")}>搜索：{keyword.trim()}</Tag>}
               {[["来源", source, setSource], ["目标", country, setCountry], ["体系", system, setSystem], ["产品", product, setProduct], ["规划", planning, setPlanning], ["顾问", advisor, setAdvisor], ["班主任", homeroomTeacher, setHomeroomTeacher]].filter(([, value]) => value !== "全部").map(([label, value, setter]) => <Tag key={label} closable onClose={() => setter("全部")}>{label}：{value}</Tag>)}
               {Object.entries(columnFilters).map(([key, filter]) => {
-                const label = standardArchiveFields.find((field) => field.key === key)?.title;
+                const label = archiveFields.find((field) => field.key === key)?.title;
                 const summary = [filter.presence === "filled" ? "已填写" : filter.presence === "empty" ? "未填写" : "", filter.values?.join("、"), filter.keyword?.trim(), filter.min != null || filter.max != null ? `${filter.min ?? "不限"}—${filter.max ?? "不限"}` : "", filter.start || filter.end ? `${filter.start || "不限"} 至 ${filter.end || "不限"}` : ""].filter(Boolean).join(" · ");
                 return <Tag key={key} closable onClose={() => applyColumnFilter(key, {})}>{label}：{summary}</Tag>;
               })}
@@ -1484,6 +1518,7 @@ function StudentsArchivePage({ go }) {
           <div className="archive-table-summary">
             <Space size={[8, 8]} wrap>
               <Tag>标准字段 {standardArchiveFields.length} 个</Tag>
+              {customFields.length > 0 && <Tag>自定义字段 {customFields.length} 个</Tag>}
               <Tag>当前展示 {visibleFieldKeys.length + 1} 列</Tag>
               <Tag>档案 {filteredRows.length}/{standardArchiveRows.length} 条</Tag>
             </Space>
@@ -1511,14 +1546,22 @@ function StudentsArchivePage({ go }) {
             onClose={() => setFieldDrawerOpen(false)}
             extra={(
               <Space>
-                <Button onClick={() => { setDraftFieldKeys(defaultArchiveFieldKeys); setDraftFieldOrder(standardArchiveFields.map((field) => field.key)); }}>恢复默认</Button>
-                <Button onClick={() => setDraftFieldKeys(standardArchiveFields.map((field) => field.key))}>全选</Button>
+                <Button onClick={() => { setDraftFieldKeys([...defaultArchiveFieldKeys, ...draftCustomFields.map((field) => field.key)]); setDraftFieldOrder(draftArchiveFields.map((field) => field.key)); }}>恢复默认</Button>
+                <Button onClick={() => setDraftFieldKeys(draftArchiveFields.map((field) => field.key))}>全选</Button>
                 <Button onClick={() => setDraftFieldKeys(requiredArchiveFieldKeys)}>清空可选</Button>
                 <Button type="primary" onClick={saveFieldConfig}>保存</Button>
               </Space>
             )}
           >
             <Alert type="info" showIcon message="学生姓名和操作列固定展示；其他字段可按老师个人工作场景配置。" />
+            <section className="archive-custom-field-section">
+              <div className="archive-custom-field-heading"><Title level={5}>自定义字段</Title><Text type="secondary">{draftCustomFields.length}/5</Text></div>
+              <Space.Compact className="full-width">
+                <Input aria-label="自定义字段名称" value={newFieldName} maxLength={20} disabled={draftCustomFields.length >= 5} placeholder={draftCustomFields.length >= 5 ? "已达到5个自定义字段上限" : "输入字段名称"} onChange={(event) => { setNewFieldName(event.target.value); setNewFieldError(""); }} onPressEnter={addCustomField} />
+                <Button icon={<PlusOutlined />} disabled={draftCustomFields.length >= 5} onClick={addCustomField}>新增字段</Button>
+              </Space.Compact>
+              {newFieldError && <Text type="danger">{newFieldError}</Text>}
+            </section>
             <section className="archive-field-order">
               <Title level={5}>展示顺序</Title>
               <div className="archive-field-order-row"><Checkbox checked disabled aria-label="展示学生姓名" /><span className="archive-field-order-index">1</span><span className="archive-field-order-title">学生姓名</span><Tag>固定左侧</Tag></div>
@@ -1526,7 +1569,7 @@ function StudentsArchivePage({ go }) {
                 if (over && active.id !== over.id) moveArchiveField(sortableFieldKeys.indexOf(active.id), sortableFieldKeys.indexOf(over.id));
               }}>
                 <SortableContext items={sortableFieldKeys} strategy={verticalListSortingStrategy}>
-                  {sortableFieldKeys.map((key, index) => <SortableArchiveField key={key} field={standardArchiveFields.find((field) => field.key === key)} index={index} total={sortableFieldKeys.length} onMove={moveArchiveField} checked={draftFieldKeys.includes(key)} onToggle={(checked) => setDraftFieldKeys((current) => checked ? [...new Set([...current, key])] : current.filter((item) => item !== key))} />)}
+                  {sortableFieldKeys.map((key, index) => <SortableArchiveField key={key} field={draftArchiveFields.find((field) => field.key === key)} index={index} total={sortableFieldKeys.length} onMove={moveArchiveField} checked={draftFieldKeys.includes(key)} onToggle={(checked) => setDraftFieldKeys((current) => checked ? [...new Set([...current, key])] : current.filter((item) => item !== key))} />)}
                 </SortableContext>
               </DndContext>
               <div className="archive-field-order-row"><Checkbox checked disabled aria-label="展示操作" /><span className="archive-field-order-index">{draftFieldOrder.length + 1}</span><span className="archive-field-order-title">操作</span><Tag>固定右侧</Tag></div>

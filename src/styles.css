@@ -889,6 +889,9 @@ body {
 }
 
 .archive-field-order { margin-top: 20px; }
+.archive-custom-field-section { margin-top: 20px; }
+.archive-custom-field-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.archive-custom-field-heading .ant-typography { margin: 0; }
 .archive-field-order-row { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #f0f0f0; background: #fff; }
 .archive-field-order-index { color: #8c8c8c; width: 24px; text-align: center; flex-shrink: 0; }
 .archive-field-order-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
