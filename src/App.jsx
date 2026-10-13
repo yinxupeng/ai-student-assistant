@@ -1123,7 +1123,9 @@ function ArchiveRichTextCell({ value, document, label, onSave }) {
 function ArchiveEditableCell({ value, label, onSave, requiresConfirmation = false, afterEdit }) {
   const { modal } = AntApp.useApp();
   const [editing, setEditing] = useState(false);
+  const confirmationPending = useRef(false);
   function submitEdit(nextValue) {
+    if (confirmationPending.current) return;
     if (nextValue === (value || "")) {
       setEditing(false);
       return;
@@ -1132,6 +1134,7 @@ function ArchiveEditableCell({ value, label, onSave, requiresConfirmation = fals
       if (onSave(nextValue)) setEditing(false);
       return;
     }
+    confirmationPending.current = true;
     modal.confirm({
       title: `确认修改${label}？`,
       content: (
@@ -1142,6 +1145,7 @@ function ArchiveEditableCell({ value, label, onSave, requiresConfirmation = fals
       ),
       okText: "确认修改",
       cancelText: "取消",
+      afterClose: () => { confirmationPending.current = false; },
       onOk: () => {
         if (onSave(nextValue)) setEditing(false);
         else return Promise.reject(new Error("Archive field save failed"));
