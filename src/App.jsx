@@ -1575,14 +1575,6 @@ function StudentsArchivePage({ go }) {
             )}
           >
             <Alert type="info" showIcon message="学生姓名和操作列固定展示；其他字段可按老师个人工作场景配置。" />
-            <section className="archive-custom-field-section">
-              <div className="archive-custom-field-heading"><Title level={5}>自定义字段</Title><Text type="secondary">{draftCustomFields.length}/5</Text></div>
-              <Space.Compact className="full-width">
-                <Input aria-label="自定义字段名称" value={newFieldName} maxLength={20} disabled={draftCustomFields.length >= 5} placeholder={draftCustomFields.length >= 5 ? "已达到5个自定义字段上限" : "输入字段名称"} onChange={(event) => { setNewFieldName(event.target.value); setNewFieldError(""); }} onPressEnter={addCustomField} />
-                <Button icon={<PlusOutlined />} disabled={draftCustomFields.length >= 5} onClick={addCustomField}>新增字段</Button>
-              </Space.Compact>
-              {newFieldError && <Text type="danger">{newFieldError}</Text>}
-            </section>
             <section className="archive-field-order">
               <Title level={5}>展示顺序</Title>
               <div className="archive-field-order-row"><Checkbox checked disabled aria-label="展示学生姓名" /><span className="archive-field-order-index">1</span><span className="archive-field-order-title">学生姓名</span><Tag>固定左侧</Tag></div>
@@ -1594,6 +1586,14 @@ function StudentsArchivePage({ go }) {
                 </SortableContext>
               </DndContext>
               <div className="archive-field-order-row"><Checkbox checked disabled aria-label="展示操作" /><span className="archive-field-order-index">{draftFieldOrder.length + 1}</span><span className="archive-field-order-title">操作</span><Tag>固定右侧</Tag></div>
+            </section>
+            <section className="archive-custom-field-section">
+              <div className="archive-custom-field-heading"><Text type="secondary">添加自定义字段</Text><Text type="secondary">{draftCustomFields.length}/5</Text></div>
+              <Space.Compact className="full-width">
+                <Input size="small" aria-label="自定义字段名称" value={newFieldName} maxLength={20} disabled={draftCustomFields.length >= 5} placeholder={draftCustomFields.length >= 5 ? "已达到5个自定义字段上限" : "输入字段名称"} onChange={(event) => { setNewFieldName(event.target.value); setNewFieldError(""); }} onPressEnter={addCustomField} />
+                <Button size="small" icon={<PlusOutlined />} disabled={draftCustomFields.length >= 5} onClick={addCustomField}>新增字段</Button>
+              </Space.Compact>
+              {newFieldError && <Text type="danger">{newFieldError}</Text>}
             </section>
           </Drawer>
         </Card>
