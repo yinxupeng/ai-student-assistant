@@ -971,10 +971,10 @@ function ServicePlanDrawer({ student, onClose }) {
     return (
       <div key={item.id} className="service-plan-item">
         <div className="service-plan-item-heading">
-          <label htmlFor={`service-plan-${item.id}`}>计划 {index + 1}</label>
+          <span className="service-plan-item-label">计划 {index + 1}</span>
           <Tooltip title="删除计划"><Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`删除${month}月计划${index + 1}`} onClick={() => removePlan(month, item.id)} /></Tooltip>
         </div>
-        <TextArea id={`service-plan-${item.id}`} rows={3} maxLength={5000} value={item.text} onChange={(event) => editPlan(month, item.id, event.target.value)} placeholder="填写跟进计划" />
+        <ArchiveEditableCell value={item.text} label={`${month}月计划${index + 1}`} onSave={(text) => { editPlan(month, item.id, text); return true; }} />
       </div>
     );
   }

@@ -879,7 +879,8 @@ body {
 .archive-color-swatch[aria-pressed="true"], .archive-color-swatch:focus-visible { outline: 2px solid #1677ff; outline-offset: 2px; }
 .archive-rich-actions { margin-top: 8px; }
 
-.student-table .ant-typography-edit-content {
+.student-table .ant-typography-edit-content,
+.service-plan-item .ant-typography-edit-content {
   margin: 0;
   inset-inline-start: 0;
 }
@@ -1083,7 +1084,7 @@ body {
 .service-plan-summary { margin-bottom: 16px; }
 .service-plan-item { min-width: 0; }
 .service-plan-item-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.service-plan-item-heading label { color: #667085; font-size: 12px; }
+.service-plan-item-label { color: #667085; font-size: 12px; }
 .service-plan-add { margin-top: auto; }
 .service-timeline-scroll { overflow: auto; max-height: 65vh; border: 1px solid #d9dfe8; }
 .service-timeline-table { width: max-content; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
