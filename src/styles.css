@@ -859,14 +859,6 @@ body {
   overflow-wrap: anywhere;
 }
 
-.archive-detail-page { background: #fff; padding: 24px; }
-.archive-detail-header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding-bottom: 20px; }
-.archive-detail-header .ant-typography { margin: 0; }
-.archive-detail-section { padding: 20px 0; border-top: 1px solid #f0f0f0; }
-.archive-detail-page .ant-descriptions-item-content { white-space: pre-wrap; overflow-wrap: anywhere; vertical-align: top; }
-.archive-detail-page .ant-typography-edit-content { margin: 0; inset-inline-start: 0; }
-.archive-detail-service-footer { margin-top: 16px; }
-@media (max-width: 540px) { .archive-detail-page { padding: 16px; } }
 
 .archive-remark-cell { min-height: 24px; width: 100%; }
 .archive-remark-value { white-space: pre-wrap; overflow-wrap: anywhere; }
