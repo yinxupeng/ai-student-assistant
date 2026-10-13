@@ -1085,6 +1085,8 @@ body {
 .service-plan-item { min-width: 0; }
 .service-plan-item-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .service-plan-item-label { color: #667085; font-size: 12px; }
+.service-plan-delete.ant-btn { color: #a6adb8; vertical-align: middle; }
+.service-plan-delete.ant-btn:hover { color: #667085 !important; background: #f5f5f5 !important; }
 .service-plan-add { margin-top: auto; }
 .service-timeline-scroll { overflow: auto; max-height: 65vh; border: 1px solid #d9dfe8; }
 .service-timeline-table { width: max-content; table-layout: fixed; border-collapse: separate; border-spacing: 0; }

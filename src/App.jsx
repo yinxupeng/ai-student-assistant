@@ -972,9 +972,10 @@ function ServicePlanDrawer({ student, onClose }) {
       <div key={item.id} className="service-plan-item">
         <div className="service-plan-item-heading">
           <span className="service-plan-item-label">计划 {index + 1}</span>
-          <Tooltip title="删除计划"><Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`删除${month}月计划${index + 1}`} onClick={() => removePlan(month, item.id)} /></Tooltip>
         </div>
-        <ArchiveEditableCell value={item.text} label={`${month}月计划${index + 1}`} onSave={(text) => { editPlan(month, item.id, text); return true; }} />
+        <ArchiveEditableCell value={item.text} label={`${month}月计划${index + 1}`} onSave={(text) => { editPlan(month, item.id, text); return true; }} afterEdit={(
+          <Tooltip title="删除计划"><Button className="service-plan-delete" size="small" type="text" icon={<DeleteOutlined />} aria-label={`删除${month}月计划${index + 1}`} onClick={() => removePlan(month, item.id)} /></Tooltip>
+        )} />
       </div>
     );
   }
@@ -1107,7 +1108,7 @@ function ArchiveRichTextCell({ value, document, label, onSave }) {
   );
 }
 
-function ArchiveEditableCell({ value, label, onSave, requiresConfirmation = false }) {
+function ArchiveEditableCell({ value, label, onSave, requiresConfirmation = false, afterEdit }) {
   const { modal } = AntApp.useApp();
   const [editing, setEditing] = useState(false);
   function submitEdit(nextValue) {
@@ -1136,6 +1137,7 @@ function ArchiveEditableCell({ value, label, onSave, requiresConfirmation = fals
     });
   }
   return (
+    <>
     <Text className="archive-editable-text" editable={{
       editing,
       text: value || "",
@@ -1146,6 +1148,8 @@ function ArchiveEditableCell({ value, label, onSave, requiresConfirmation = fals
       onCancel: () => setEditing(false),
       onChange: submitEdit,
     }}>{archiveFallback(value)}</Text>
+    {!editing && afterEdit}
+    </>
   );
 }
 
