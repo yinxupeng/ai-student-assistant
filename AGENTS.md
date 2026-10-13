@@ -10,6 +10,8 @@ When implementing from a selected generated mock, treat that image as the source
 
 ## Product Context
 
+服务计划时间轴表格不使用蓝色顶部强调线，仅保留浅灰色单元格分隔线。
+
 服务计划删除图标放在内容编辑图标后面，使用浅灰色，悬停也不使用强烈红色；编辑时隐藏删除入口。
 
 服务计划两种视图的计划内容复用学生列表普通文本单元格编辑样式，默认展示折行文字和编辑图标，点击文字或图标编辑，空内容显示“--”，编辑提交到抽屉草稿后统一保存。

@@ -1093,7 +1093,6 @@ body {
 .service-timeline-table th, .service-timeline-table td { width: 220px; min-width: 220px; padding: 10px; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; vertical-align: top; text-align: left; }
 .service-timeline-table thead th { position: sticky; top: 0; z-index: 2; background: #f5f7fa; }
 .service-timeline-table td { background: #fff; }
-.service-timeline-table td:has(.service-plan-item) { border-top: 3px solid #91caff; }
 .service-timeline-table .service-timeline-label { position: sticky; left: 0; width: 56px; min-width: 56px; background: #f5f7fa; z-index: 1; text-align: center; }
 .service-timeline-table thead .service-timeline-label { z-index: 3; }
 .service-timeline-table .service-month-status { display: block; margin-top: 6px; }
