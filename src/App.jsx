@@ -4,7 +4,7 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import { Color, TextStyle } from "@tiptap/extension-text-style";
 import { getServicePlanItems, serializeServicePlanItems } from "./servicePlans";
-import { archiveFilterType, archiveEnumValues, isArchiveSortable, hasArchiveFilter, matchesArchiveFilter, compareArchiveRows } from "./archiveQuery";
+import { archiveFilterType, archiveEnumValues, isArchiveEmpty, isArchiveSortable, hasArchiveFilter, matchesArchiveFilter, compareArchiveRows } from "./archiveQuery";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -606,13 +606,14 @@ const standardArchiveRows = [
 ];
 
 function archiveFallback(value) {
-  return value === undefined || value === null || value === "" ? "未填写" : value;
+  return isArchiveEmpty(value) ? "--" : value;
 }
 
 function getArchiveDisplayValue(record, fieldKey) {
+  if (isArchiveEmpty(record[fieldKey])) return "--";
   const value = archiveFallback(record[fieldKey]);
   if (["enrolledSubject", "enrolledLanguage", "hasPlanning"].includes(fieldKey)) {
-    return <Tag color={value === "是" ? "blue" : value === "未填写" ? "default" : "default"}>{value}</Tag>;
+    return <Tag color={value === "是" ? "blue" : "default"}>{value}</Tag>;
   }
   if (fieldKey === "source") {
     return <Tag color={record.source?.includes("Cissy") ? "purple" : "cyan"}>{value}</Tag>;
@@ -1093,7 +1094,7 @@ function ArchiveRichTextCell({ value, document, label, onSave }) {
         onClick={() => { if (!editing) setEditing(true); }}
         onKeyDown={(event) => { if (!editing && ["Enter", " "].includes(event.key)) { event.preventDefault(); setEditing(true); } }}
       >
-        {!editing && !value ? <span>未填写</span> : <EditorContent editor={editor} />}
+        {!editing && isArchiveEmpty(value) ? <span>--</span> : <EditorContent editor={editor} />}
       </div>
       {editing ? (
         <Space size={4} className="archive-rich-actions">
