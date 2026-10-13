@@ -703,6 +703,7 @@ function AppShell() {
   const content = useMemo(() => ({
     agent: <LearningAgentPage go={go} />,
     students: <StudentsArchivePage go={go} />,
+    archiveDetail: <StudentsArchivePage go={go} studentId={selectedId} />,
     highValue: <HighValuePage go={go} />,
     profile: <UserProfile user={selected} go={go} />,
     complaint: <ComplaintPage user={selected} generated={generated} go={go} />,
@@ -710,7 +711,7 @@ function AppShell() {
     renewal: <RenewalPage user={selected} generated={generated} go={go} />,
     renewalDetail: <RenewalDetailPage user={selected} go={go} generated={generated} />,
   })[route], [route, selectedId, generated]);
-  const selectedMenuKey = route === "profile" ? "students" : route === "complaintDetail" ? "complaint" : route === "renewalDetail" ? "renewal" : route;
+  const selectedMenuKey = ["profile", "archiveDetail"].includes(route) ? "students" : route === "complaintDetail" ? "complaint" : route === "renewalDetail" ? "renewal" : route;
 
   return (
     <Layout className="app-layout">
@@ -731,7 +732,7 @@ function AppShell() {
         {route !== "agent" ? (
           <Header className="app-header">
             <div>
-              <Title level={2}>{route === "profile" ? "学生详情" : route === "complaintDetail" ? "客诉详情" : route === "renewalDetail" ? "续费详情" : pageTitle[route]}</Title>
+              <Title level={2}>{["profile", "archiveDetail"].includes(route) ? "学生详情" : route === "complaintDetail" ? "客诉详情" : route === "renewalDetail" ? "续费详情" : pageTitle[route]}</Title>
             </div>
           </Header>
         ) : null}
@@ -892,7 +893,12 @@ function LearningAgentPage({ go }) {
 
 const servicePlanStorageKey = "student-service-plans-v1";
 
-function ServicePlanDrawer({ student, onClose }) {
+function ServicePlanContainer({ embedded, footer, children, ...props }) {
+  if (embedded) return <section className="archive-detail-service">{children}<div className="archive-detail-service-footer">{footer}</div></section>;
+  return <Drawer {...props} footer={footer}>{children}</Drawer>;
+}
+
+function ServicePlanDrawer({ student, onClose, embedded = false, leaveRef }) {
   const { message, modal } = AntApp.useApp();
   const [year, setYear] = useState(new Date().getFullYear());
   const [view, setView] = useState("grid");
@@ -937,6 +943,11 @@ function ServicePlanDrawer({ student, onClose }) {
       onOk: action,
     });
   }
+  useEffect(() => {
+    if (!leaveRef) return;
+    leaveRef.current = () => leaveEditor(onClose);
+    return () => { leaveRef.current = null; };
+  }, [leaveRef, onClose, dirty]);
 
   function selectYear(nextYear) {
     leaveEditor(() => {
@@ -984,12 +995,13 @@ function ServicePlanDrawer({ student, onClose }) {
     return <span className="service-month-heading"><strong>{month}月</strong>{isCurrent && <Tag color="blue">本月</Tag>}</span>;
   }
   return (
-    <Drawer
+    <ServicePlanContainer
+      embedded={embedded}
       title={`${student.studentName} · 服务计划`}
       open
       width={view === "timeline" ? 1120 : 800}
       onClose={() => leaveEditor(onClose)}
-      footer={<Space className="service-plan-footer">{dirty && <Text type="secondary">{changedMonths.length}个月待保存</Text>}<Button onClick={() => leaveEditor(onClose)}>关闭</Button><Button type="primary" onClick={savePlan} disabled={!dirty}>保存修改</Button></Space>}
+      footer={<Space className="service-plan-footer">{dirty && <Text type="secondary">{changedMonths.length}个月待保存</Text>}{!embedded && <Button onClick={() => leaveEditor(onClose)}>关闭</Button>}<Button type="primary" onClick={savePlan} disabled={!dirty}>保存修改</Button></Space>}
     >
       <div className="service-plan-toolbar">
         <Space>
@@ -1031,7 +1043,7 @@ function ServicePlanDrawer({ student, onClose }) {
           </table>
         </div>
       )}
-    </Drawer>
+    </ServicePlanContainer>
   );
 }
 
@@ -1255,8 +1267,9 @@ function ArchiveColumnFilter({ field, rows, filter, onApply, onClose }) {
   );
 }
 
-function StudentsArchivePage({ go }) {
+function StudentsArchivePage({ go, studentId }) {
   const { message, modal } = AntApp.useApp();
+  const detailLeaveRef = useRef(null);
   const [customFields, setCustomFields] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(archiveCustomFieldsStorageKey) || "[]");
@@ -1404,6 +1417,22 @@ function StudentsArchivePage({ go }) {
   const planningOptions = getArchiveOptions(standardArchiveRows, "hasPlanning");
   const advisorOptions = getArchiveOptions(standardArchiveRows, "advisor");
   const homeroomOptions = getArchiveOptions(standardArchiveRows, "homeroomTeacher");
+  function renderArchiveField(field, record) {
+    if (richArchiveFieldKeys.includes(field.key)) {
+      return <ArchiveRichTextCell value={record[field.key]} document={record[`${field.key}Document`]} label={field.title} onSave={(value, document) => saveArchiveNote(record.id, field.key, value, document)} />;
+    }
+    if (field.custom || editableArchiveFieldKeys.includes(field.key)) {
+      return <ArchiveEditableCell value={record[field.key]} label={field.title} requiresConfirmation={["targetMajor", "courseSelection"].includes(field.key)} onSave={(value) => saveArchiveNote(record.id, field.key, value)} />;
+    }
+    const remark = archiveNotes[record.id]?.[`${field.key}Remark`];
+    return <ArchiveRemarkCell
+      remark={typeof remark === "string" ? remark : ""}
+      label={field.title}
+      studentName={record.studentName}
+      onSave={(value) => saveArchiveNote(record.id, `${field.key}Remark`, value)}
+      onNavigate={field.key === "studentName" && !studentId ? () => go("archiveDetail", record.id) : undefined}
+    >{getArchiveDisplayValue(record, field.key)}</ArchiveRemarkCell>;
+  }
   const columns = visibleFieldKeys
     .map((key) => archiveFields.find((field) => field.key === key))
     .filter(Boolean)
@@ -1419,22 +1448,7 @@ function StudentsArchivePage({ go }) {
       filterIcon: (filtered) => <FilterOutlined style={{ color: filtered ? "#1b63d9" : undefined }} />,
       filterDropdownProps: { onOpenChange: (open) => { if (open) setFilterPopupVersion((current) => current + 1); } },
       filterDropdown: ({ close }) => <ArchiveColumnFilter key={`${field.key}-${filterPopupVersion}`} field={field} rows={archiveRows} filter={columnFilters[field.key]} onApply={(filter) => applyColumnFilter(field.key, filter)} onClose={close} />,
-      render: (_, record) => {
-        if (richArchiveFieldKeys.includes(field.key)) {
-          return <ArchiveRichTextCell value={record[field.key]} document={record[`${field.key}Document`]} label={field.title} onSave={(value, document) => saveArchiveNote(record.id, field.key, value, document)} />;
-        }
-        if (field.custom || editableArchiveFieldKeys.includes(field.key)) {
-          return <ArchiveEditableCell value={record[field.key]} label={field.title} requiresConfirmation={["targetMajor", "courseSelection"].includes(field.key)} onSave={(value) => saveArchiveNote(record.id, field.key, value)} />;
-        }
-        const remark = archiveNotes[record.id]?.[`${field.key}Remark`];
-        return <ArchiveRemarkCell
-          remark={typeof remark === "string" ? remark : ""}
-          label={field.title}
-          studentName={record.studentName}
-          onSave={(value) => saveArchiveNote(record.id, `${field.key}Remark`, value)}
-          onNavigate={field.key === "studentName" ? () => go("profile", record.linkedUserId) : undefined}
-        >{getArchiveDisplayValue(record, field.key)}</ArchiveRemarkCell>;
-      },
+      render: (_, record) => renderArchiveField(field, record),
     }));
   columns.push(
     {
@@ -1485,6 +1499,36 @@ function StudentsArchivePage({ go }) {
     } catch {
       message.error("字段配置保存失败，请重试");
     }
+  }
+
+  if (studentId) {
+    const student = archiveRows.find((row) => row.id === studentId);
+    if (!student) return <Alert type="warning" message="未找到该学生档案" action={<Button onClick={() => go("students")}>返回学生列表</Button>} />;
+    const groups = archiveFields.reduce((result, field) => {
+      const group = field.custom ? "自定义信息" : field.group;
+      (result[group] ||= []).push(field);
+      return result;
+    }, {});
+    return (
+      <div className="archive-detail-page">
+        <div className="archive-detail-header">
+          <Button icon={<LeftOutlined />} onClick={() => detailLeaveRef.current ? detailLeaveRef.current() : go("students")}>返回学生列表</Button>
+          <Title level={3}>{student.studentName}</Title>
+        </div>
+        {Object.entries(groups).map(([group, fields]) => (
+          <section className="archive-detail-section" key={group}>
+            <Title level={5}>{group}</Title>
+            <Descriptions bordered column={{ xs: 1, sm: 2, lg: 3 }} size="small">
+              {fields.map((field) => <Descriptions.Item key={field.key} label={field.title} span={richArchiveFieldKeys.includes(field.key) ? { xs: 1, sm: 2, lg: 3 } : 1}>{renderArchiveField(field, student)}</Descriptions.Item>)}
+            </Descriptions>
+          </section>
+        ))}
+        <section className="archive-detail-section">
+          <Title level={5}>服务计划</Title>
+          <ServicePlanDrawer key={student.id} student={student} embedded leaveRef={detailLeaveRef} onClose={() => go("students")} />
+        </section>
+      </div>
+    );
   }
 
   return (
