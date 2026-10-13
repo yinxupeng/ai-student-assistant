@@ -3,7 +3,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import { Color, TextStyle } from "@tiptap/extension-text-style";
-import { getServicePlanItems, serializeServicePlanItems } from "./servicePlans";
+import { getServicePlanItems, serializeServicePlanItems, getSampleServicePlanEntry } from "./servicePlans";
 import { archiveFilterType, archiveEnumValues, isArchiveEmpty, isArchiveSortable, hasArchiveFilter, matchesArchiveFilter, compareArchiveRows } from "./archiveQuery";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -904,7 +904,8 @@ function ServicePlanDrawer({ student, onClose }) {
       return {};
     }
   });
-  const getEntry = (selectedYear, selectedMonth) => plans[student.id]?.[`${selectedYear}-${selectedMonth}`] || {};
+  const getEntry = (selectedYear, selectedMonth) => plans[student.id]?.[`${selectedYear}-${selectedMonth}`]
+    || (selectedYear === new Date().getFullYear() ? getSampleServicePlanEntry(student.id, selectedYear, selectedMonth) : {});
   const getSavedItems = (month) => getServicePlanItems(getEntry(year, month), `${student.id}-${year}-${month}-legacy`);
   const [drafts, setDrafts] = useState({});
   const changedMonths = Object.keys(drafts).filter((month) => {
