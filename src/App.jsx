@@ -1206,7 +1206,7 @@ function ArchiveRemarkCell({ children, remark, label, studentName, onSave, onNav
   );
 }
 
-function SortableArchiveField({ field, index, total, onMove, checked, onToggle }) {
+function SortableArchiveField({ field, index, total, onMove, checked, onToggle, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: field.key });
   return (
     <div ref={setNodeRef} className="archive-field-order-row" style={{ transform: CSS.Transform.toString(transform), transition, position: "relative", zIndex: isDragging ? 1 : undefined }}>
@@ -1214,8 +1214,10 @@ function SortableArchiveField({ field, index, total, onMove, checked, onToggle }
       <Button type="text" size="small" icon={<HolderOutlined />} aria-label={`拖动${field.title}`} className="archive-field-drag" {...attributes} {...listeners} />
       <span className="archive-field-order-index">{index + 2}</span>
       <span className="archive-field-order-title">{field.title}</span>
+      {field.custom && <Tag color="blue">自定义</Tag>}
       <Tooltip title="上移"><Button size="small" type="text" icon={<ArrowUpOutlined />} aria-label={`上移${field.title}`} disabled={index === 0} onClick={() => onMove(index, index - 1)} /></Tooltip>
       <Tooltip title="下移"><Button size="small" type="text" icon={<ArrowDownOutlined />} aria-label={`下移${field.title}`} disabled={index === total - 1} onClick={() => onMove(index, index + 1)} /></Tooltip>
+      {field.custom && <Tooltip title="删除字段"><Button size="small" type="text" danger icon={<DeleteOutlined />} aria-label={`删除自定义字段${field.title}`} onClick={() => onDelete(field)} /></Tooltip>}
     </div>
   );
 }
@@ -1248,7 +1250,7 @@ function ArchiveColumnFilter({ field, rows, filter, onApply, onClose }) {
 }
 
 function StudentsArchivePage({ go }) {
-  const { message } = AntApp.useApp();
+  const { message, modal } = AntApp.useApp();
   const [customFields, setCustomFields] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(archiveCustomFieldsStorageKey) || "[]");
@@ -1346,6 +1348,22 @@ function StudentsArchivePage({ go }) {
     setDraftFieldKeys((current) => [...current, field.key]);
     setDraftFieldOrder((current) => [...current, field.key]);
     setNewFieldName(""); setNewFieldError("");
+  }
+  function deleteCustomField(field) {
+    if (!field.custom) return;
+    modal.confirm({
+      title: `删除自定义字段“${field.title}”？`,
+      content: "该字段将从配置列表和学生表格中移除，保存字段配置后生效。",
+      okText: "删除字段",
+      okButtonProps: { danger: true },
+      cancelText: "取消",
+      onOk: () => {
+        setDraftCustomFields((current) => current.filter((item) => item.key !== field.key));
+        setDraftFieldKeys((current) => current.filter((key) => key !== field.key));
+        setDraftFieldOrder((current) => current.filter((key) => key !== field.key));
+        setNewFieldError("");
+      },
+    });
   }
   const filteredRows = archiveRows.filter((item) => {
     const searchableFields = archiveFields.map((field) => field.key);
@@ -1453,6 +1471,9 @@ function StudentsArchivePage({ go }) {
       window.localStorage.setItem(archiveFieldStorageKey, JSON.stringify(nextKeys));
       setVisibleFieldKeys(nextKeys);
       setCustomFields(draftCustomFields);
+      const validKeys = new Set(draftArchiveFields.map((field) => field.key));
+      setColumnFilters((current) => Object.fromEntries(Object.entries(current).filter(([key]) => validKeys.has(key))));
+      if (sortConfig && !validKeys.has(sortConfig.key)) setSortConfig(null);
       setFieldDrawerOpen(false);
       message.success("字段配置已保存");
     } catch {
@@ -1569,7 +1590,7 @@ function StudentsArchivePage({ go }) {
                 if (over && active.id !== over.id) moveArchiveField(sortableFieldKeys.indexOf(active.id), sortableFieldKeys.indexOf(over.id));
               }}>
                 <SortableContext items={sortableFieldKeys} strategy={verticalListSortingStrategy}>
-                  {sortableFieldKeys.map((key, index) => <SortableArchiveField key={key} field={draftArchiveFields.find((field) => field.key === key)} index={index} total={sortableFieldKeys.length} onMove={moveArchiveField} checked={draftFieldKeys.includes(key)} onToggle={(checked) => setDraftFieldKeys((current) => checked ? [...new Set([...current, key])] : current.filter((item) => item !== key))} />)}
+                  {sortableFieldKeys.map((key, index) => <SortableArchiveField key={key} field={draftArchiveFields.find((field) => field.key === key)} index={index} total={sortableFieldKeys.length} onMove={moveArchiveField} checked={draftFieldKeys.includes(key)} onDelete={deleteCustomField} onToggle={(checked) => setDraftFieldKeys((current) => checked ? [...new Set([...current, key])] : current.filter((item) => item !== key))} />)}
                 </SortableContext>
               </DndContext>
               <div className="archive-field-order-row"><Checkbox checked disabled aria-label="展示操作" /><span className="archive-field-order-index">{draftFieldOrder.length + 1}</span><span className="archive-field-order-title">操作</span><Tag>固定右侧</Tag></div>
