@@ -1039,7 +1039,9 @@ body {
 .service-month-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 0;
+  border-top: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
 }
 
 .service-month-cell {
@@ -1053,20 +1055,18 @@ body {
   font: inherit;
   color: #344054;
   background: #fff;
-  border: 1px solid #d9dfe8;
-  border-radius: 6px;
+  border: 0;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
 }
 
-.service-month-cell:hover,
-.service-month-cell:focus-within {
-  border-color: #1677ff;
-  outline: 2px solid #91caff;
-  outline-offset: 1px;
-}
-
-.service-month-cell:focus-within {
-  border-color: #1677ff;
-  background: #f0f7ff;
+.service-month-grid .service-month-heading {
+  margin: -12px -12px 0;
+  padding: 10px 12px;
+  min-height: 42px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .service-month-heading {

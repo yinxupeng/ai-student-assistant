@@ -10,6 +10,8 @@ When implementing from a selected generated mock, treat that image as the source
 
 ## Product Context
 
+服务计划宫格模式按每行3个月展示连续表格（移动端2个月），使用浅灰分隔线和月份表头，不使用独立卡片间距、圆角或蓝色悬停描边。
+
 服务计划时间轴表格不使用蓝色顶部强调线，仅保留浅灰色单元格分隔线。
 
 服务计划删除图标放在内容编辑图标后面，使用浅灰色，悬停也不使用强烈红色；编辑时隐藏删除入口。
