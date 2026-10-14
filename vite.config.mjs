@@ -1,25 +1,25 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   base: "./",
   build: {
+    outDir: "dist/assets",
+    emptyOutDir: false,
+    lib: { entry: "src/main.ts", name: "StudentArchive", formats: ["iife"], fileName: () => "app.js", cssFileName: "app" },
     rollupOptions: {
-      input: "app.html",
       output: {
-        assetFileNames: "assets/app[extname]",
-        chunkFileNames: "assets/[name].js",
-        entryFileNames: "assets/app.js",
+        assetFileNames: "app[extname]",
       },
     },
   },
   optimizeDeps: {
-    include: ["react", "react-dom/client"],
+    include: ["vue", "element-plus"],
   },
   server: {
     warmup: {
-      clientFiles: ["./src/main.jsx"],
+      clientFiles: ["./src/main.ts"],
     },
   },
-  plugins: [react()],
+  plugins: [vue()],
 });

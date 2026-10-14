@@ -10,6 +10,8 @@ When implementing from a selected generated mock, treat that image as the source
 
 ## Product Context
 
+学生档案主系统使用 Vue 3 + TypeScript + Element Plus；表格、筛选、弹窗、字段配置和服务计划均采用 Element Plus。复用原存储键，兼容已有本机字段、备注、富文本及月度计划数据。姓名跳转的独立 HTML 演示页保持原样；学情Agent等旧版页面保留在 legacy.html 入口。
+
 点击学生姓名直接跳转到“客户视角&内部版demo展示V1007/02-已签约客户-直观版.html”原型页面，保持目标页面原内容，不使用此前新增的统一档案详情页。
 
 服务计划宫格模式按每行3个月展示连续表格（移动端2个月），使用浅灰分隔线和月份表头，不使用独立卡片间距、圆角或蓝色悬停描边。

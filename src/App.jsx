@@ -688,13 +688,17 @@ function getRenewalIntent(user) {
 }
 
 function AppShell() {
-  const [route, setRoute] = useState("students");
+  const [route, setRoute] = useState(() => new URLSearchParams(window.location.search).get("view") === "agent" ? "agent" : "students");
   const [collapsed, setCollapsed] = useState(false);
   const [selectedId, setSelectedId] = useState("u-high");
   const [generated, setGenerated] = useState(false);
   const selected = users.find((item) => item.id === selectedId) || users[0];
 
   function go(nextRoute, userId) {
+    if (nextRoute === "students" && window.location.pathname.endsWith("legacy.html")) {
+      window.location.assign("./index.html");
+      return;
+    }
     if (userId) setSelectedId(userId);
     setRoute(nextRoute);
     setGenerated(false);
