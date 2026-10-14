@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --open /app.html",
-    "build": "vue-tsc --noEmit && vite build && vite build --config vite.legacy.config.mjs",
+    "build": "vue-tsc --noEmit && vite build && vite build --config vite.legacy.config.mjs && node --test scripts/static-build.test.js",
     "typecheck": "vue-tsc --noEmit",
     "test": "node --test src/archiveQuery.test.js",
     "preview": "vite preview --host 127.0.0.1"
